@@ -1,0 +1,88 @@
+<html>
+
+<head>
+    <title>NSK's SpeechRecognition Web API Test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+
+</head>
+
+<body class="bg-light">
+    <div class="row">
+        <div class="col">
+            <table class="table table-bordered table-hover table-striped" id="resultTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Text</th>
+                        <th>Confidence</th>
+                    </tr>
+    
+                </thead>
+                <tbody>
+    
+                </tbody>
+            </table>
+    
+        </div>
+       
+    </div>
+
+
+
+
+    <script>
+        var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition
+        var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList
+        var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent
+        var recognition = new SpeechRecognition();
+        var speechRecognitionList = new SpeechGrammarList();
+        // speechRecognitionList.addFromString(grammar, 1);
+        // recognition.grammars = speechRecognitionList;
+        recognition.continuous = true;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        $(function () {
+            listen();
+        });
+
+
+        function listen() {
+            recognition.start();
+            console.log('Ready to receive a color command.');
+            $('#btn').attr("disabled", true);
+        }
+
+
+        recognition.onresult = function (event) {
+            var last = event.results.length - 1;
+            var transcript = event.results[last][0].transcript;
+            var confidence = event.results[last][0].confidence;
+
+            $('#resultTable tbody').append('<tr><td>' + last + '</td><td>' + transcript + '</td><td>' + Math.floor( confidence*100) + '%</td></tr>');
+        }
+
+        recognition.onspeechend = function () {
+            //recognition.stop();
+            //$('#btn').removeAttr("disabled");
+            console.log('onspeechend');
+        }
+
+    </script>
+
+
+</body>
+
+</html>
