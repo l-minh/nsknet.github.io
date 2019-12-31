@@ -18,6 +18,8 @@
 </head>
 
 <body class="bg-light">
+<h1 id="tmpResult">Nói tiếng việt đi bạn</h1>
+
     <div class="row">
         <div class="col">
             <table class="table table-bordered table-hover table-striped" id="resultTable">
@@ -50,8 +52,8 @@
         // speechRecognitionList.addFromString(grammar, 1);
         // recognition.grammars = speechRecognitionList;
         recognition.continuous = true;
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        recognition.lang = 'vi-VN';
+        recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
         $(function () {
@@ -70,8 +72,9 @@
             var last = event.results.length - 1;
             var transcript = event.results[last][0].transcript;
             var confidence = event.results[last][0].confidence;
-
-            $('#resultTable tbody').append('<tr><td>' + last + '</td><td>' + transcript + '</td><td>' + Math.floor( confidence*100) + '%</td></tr>');
+			$("#tmpResult").text(transcript);
+			if(event.results[last].isFinal)
+				$('#resultTable tbody').prepend('<tr><td>' + last + '</td><td>' + transcript + '</td><td>' + Math.floor( confidence*100) + '%</td></tr>');
         }
 
         recognition.onspeechend = function () {
