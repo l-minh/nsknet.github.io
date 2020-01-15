@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#sh -c "$(curl -fsSL https://nsknet.github.io/install/centos.sh)"
+
+
 function install_postgres_remote()
 {
 
@@ -87,7 +90,7 @@ function install_fail2ban(){
 	#https://hocvps.com/cai-dat-fail2ban-tren-centos/
 	echo "========================================================================="
 	echo "Config fail2ban"
-	yum install epel-release
+	yum install epel-release -y
 	yum install fail2ban -y
 
 	cat > "/etc/fail2ban/jail.conf" <<END
@@ -297,6 +300,7 @@ END
 
 	
 	firewall-cmd --zone=public --add-port=80/tcp --permanent
+	firewall-cmd --zone=public --add-port=443/tcp --permanent
 	firewall-cmd --reload
 	
 
@@ -305,8 +309,24 @@ END
 	echo "========================================================================="
 }
 
-function install_nginx_netcore_domain(){
 
+
+function install_nginx_certbot(){
+	yum -y install yum-utils
+	yum-config-manager --enable rhui-REGION-rhel-server-extras rhui-REGION-rhel-server-optional
+	yum -y install certbot python2-certbot-nginx
+	#sudo certbot --nginx
+	echo "0 0,12 * * * root python -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew" | sudo tee -a /etc/crontab > /dev/null
+	
+	
+	#certbot --nginx certonly --noninteractive --webroot --agree-tos --register-unsafely-without-email -d ${SITE_DOMAIN} 
+}
+
+
+
+function install_nginx_netcore_domain(){
+	echo "========================================================================="
+	echo "Install new nginx domain and netcore site"
 	printf "\nEnter your main domain [ENTER]: " 
 	read server_name
 	server_name_alias="www.$server_name"
@@ -315,7 +335,13 @@ function install_nginx_netcore_domain(){
 	fi
 
 	printf "\nEnter your executedll [example.dll]: " 
-	read dll_name
+	read dll_full_name
+	
+	dll_name="$dll_full_name"
+	if [[ $dll_full_name == *dll* ]]; then
+		dll_name=${dll_full_name/www./''}
+	fi
+	
 
 	printf "\nEnter port number [from 2000 to 65000]: " 
 	read port_number
@@ -368,7 +394,7 @@ Description=$server_name
 
 [Service]
 WorkingDirectory=/home/$server_name/public_html
-ExecStart=/usr/bin/dotnet /home/$server_name/public_html/$dll_name
+ExecStart=/usr/bin/dotnet /home/$server_name/public_html/$dll_name.dll
 Restart=always
 # Restart service after 10 seconds if the dotnet service crashes:
 RestartSec=10
@@ -383,9 +409,35 @@ Environment=ASPNETCORE_URLS=http://localhost:$port_number
 [Install]
 WantedBy=multi-user.target
 END
+
+
+	echo "========================================================================="
+	echo "Donwload sample site"
+	wget nsknet.github.io/install/hellonetcore3.1.tar -P  /home/$server_name/public_html/
+	tar -xvf /home/$server_name/public_html/hellonetcore3.1.tar -C /home/$server_name/public_html
+	rm -fv  /home/$server_name/public_html/hellonetcore3.1.tar
+	mv /home/$server_name/public_html/HelloNetcore.deps.json  /home/$server_name/public_html/$dll_name.deps.json
+	mv /home/$server_name/public_html/HelloNetcore  /home/$server_name/public_html/$dll_name
+	mv /home/$server_name/public_html/HelloNetcore.pdb  /home/$server_name/public_html/$dll_name.pdb
+	mv /home/$server_name/public_html/HelloNetcore.dll  /home/$server_name/public_html/$dll_name.dll
+	mv /home/$server_name/public_html/HelloNetcore.runtimeconfig.json  /home/$server_name/public_html/$dll_name.runtimeconfig.json
+	# perl -pi -e 's/HelloNetcore/{$dll_name}/g' /home/$server_name/public_html/$dll_name.deps.json
+	sed -i.bak s/HelloNetcore/$dll_name/g /home/$server_name/public_html/$dll_name.deps.json
+
+
+
+
 	systemctl daemon-reload
 	sudo systemctl restart nginx
 	sudo systemctl start $server_name.service
+
+
+	echo "========================================================================="
+	echo "Setup https"
+	certbot --nginx  --noninteractive  --agree-tos --register-unsafely-without-email -d $server_name
+
+
+
 
 	echo "========================================================="
 	echo "Install nginx done, please upload your code to: /home/$server_name/public_html"
@@ -545,6 +597,7 @@ function show_menu(){
 		  ;;	  
 	  8) 
 		  install_nginx_netcore_domain
+		  
 		  ;;  
 	  9) 
 		  install_open_vpn
@@ -570,3 +623,7 @@ do
 	echo ""
 	echo ""
 done
+
+
+
+
