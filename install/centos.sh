@@ -22,7 +22,15 @@ function install_postgres_remote()
 
 	sudo systemctl enable --now postgresql-12
 
-	#If you have a running Firewall service and remote clients should connect to your database server, allow PostgreSQL service.
+
+	printf "\nEnter db password for user postgres: " 
+	read db_password
+	# #error here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	su - postgres -c "psql -U postgres -d postgres -c \"alter user postgres with password '$db_password';\""
+	sudo systemctl restart postgresql-12
+
+
+	#allow PostgreSQL service.
 	sudo firewall-cmd --add-service=postgresql --permanent
 	sudo firewall-cmd --reload
 
@@ -74,15 +82,15 @@ END
 	# echo "Set PostgreSQL admin user"
 	# sudo su - postgres
 	
-	printf "\nEnter db password for user postgres: " 
-	read db_password
-	#error here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	su - postgres -c "psql -U postgres -d postgres -c \"alter user postgres with password '$db_password';\""
-	sudo systemctl restart postgresql-12
+
 
 	echo ""
 	echo "Done"
 	echo "========================================================================="
+	echo "If auth have any error, please run this command manually:"
+	echo "sudo su - postgres"
+	echo "alter user postgres with password '$db_password'"
+	echo "systemctl restart postgresql-12"
 	
 }
 
