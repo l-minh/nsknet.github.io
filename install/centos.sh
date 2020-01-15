@@ -79,19 +79,9 @@ host 	all 			all 			0.0.0.0/0 				md5
 END
 	sudo systemctl restart postgresql-12
 
-	# echo "Set PostgreSQL admin user"
-	# sudo su - postgres
-	
-
-
 	echo ""
 	echo "Done"
-	echo "========================================================================="
-	echo "If auth have any error, please run this command manually:"
-	echo "sudo su - postgres"
-	echo "alter user postgres with password '$db_password'"
-	echo "systemctl restart postgresql-12"
-	
+	echo "========================================================================="	
 }
 
 function install_fail2ban(){
@@ -440,11 +430,6 @@ END
 	sudo systemctl start $server_name.service
 
 
-	echo "========================================================================="
-	echo "Setup https"
-	certbot --nginx  --noninteractive  --agree-tos --register-unsafely-without-email -d $server_name
-
-
 
 
 	echo "========================================================="
@@ -454,6 +439,48 @@ END
 	echo "========================================================="
 
 }
+
+function install_nginx_certbot_add_domain_direct_dns(){
+	echo "========================================================================="
+	echo "Setup https"
+	printf "\nEnter your main domain [ENTER]: " 
+	read server_name
+	server_name_alias="www.$server_name"
+	if [[ $server_name == *www* ]]; then
+		server_name_alias=${server_name/www./''}
+	fi
+	certbot --nginx  --noninteractive  --agree-tos --register-unsafely-without-email -d $server_name_alias
+	echo ""
+	echo "Done"
+	echo "========================================================================="
+}
+
+function install_nginx_certbot_add_domain_cloudflare(){
+	yum -y install python3-pip
+	pip3 install certbot-dns-cloudflare
+	
+	echo "========================================================================="
+	echo "Setup https"
+	printf "\nEnter your main domain [ENTER]: " 
+	read server_name
+	server_name_alias="www.$server_name"
+	if [[ $server_name == *www* ]]; then
+		server_name_alias=${server_name/www./''}
+	fi
+	#didnt create /root/cloudflare.ini yet
+	cat > "/etc/systemd/system/$server_name.service"  <<END
+[Unit]
+dns_cloudflare_email = email@gmail.com
+dns_cloudflare_api_key = Global API Key
+END
+	
+	chmod 600 /root/cloudflare.ini
+	certbot --dns-cloudflare --dns-cloudflare-credentials /root/cloudflare.ini --nginx  --noninteractive  --agree-tos --register-unsafely-without-email -d $server_name_alias -d *.$server_name_alias
+	echo ""
+	echo "Done"
+	echo "========================================================================="
+}
+
 
 function install_mariadb(){
 	echo "========================================================================="
@@ -572,6 +599,9 @@ function show_menu(){
 	echo "    7) Install: phpMyAdmin"
 	echo "    8) Add: Domain with NGINX and NetCore"
 	echo "    9) Install: Open VPN"
+	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
+	# echo "    11) Add: Cerbot config to domain via direct DNS"
+	# echo "    12) Add: Cerbot config to domain via Cloudflare"
 	# echo "    10) Install: FTP"
 	# echo "    11) Add: FTP Account"
 	printf "Your choise: "
@@ -609,6 +639,15 @@ function show_menu(){
 		  ;;  
 	  9) 
 		  install_open_vpn
+		  ;;
+	  10) 
+		  install_nginx_certbot
+		  ;;	  
+	  11) 
+		  install_nginx_certbot_add_domain_direct_dns
+		  ;;	  
+	  12) 
+		  install_nginx_certbot_add_domain_cloudflare
 		  ;;
 
 		  
