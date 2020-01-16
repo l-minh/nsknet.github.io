@@ -23,7 +23,7 @@ function install_postgres_remote()
 	sudo systemctl enable --now postgresql-12
 
 
-	printf "\nEnter db password for user postgres: " 
+	printf "\nEnter db password for user postgres [no special charaters]: " 
 	read db_password
 	# #error here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	su - postgres -c "psql -U postgres -d postgres -c \"alter user postgres with password '$db_password';\""
@@ -32,6 +32,7 @@ function install_postgres_remote()
 
 	#allow PostgreSQL service.
 	sudo firewall-cmd --add-service=postgresql --permanent
+	sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
 	sudo firewall-cmd --reload
 
 
@@ -341,9 +342,10 @@ function install_nginx_netcore_domain(){
 	fi
 	
 
-	printf "\nEnter port number [from 2000 to 65000]: " 
-	read port_number
-
+	# printf "\nEnter port number [from 2000 to 65000]: " 
+	# read port_number
+	DIFF=$((50000-5000+1))
+	port_number=$(($(($RANDOM%$DIFF))+5000))
 
 	mkdir -p /home/$server_name/public_html
 	# mkdir /home/$server_name/private_html
@@ -436,6 +438,7 @@ END
 	echo "Install nginx done, please upload your code to: /home/$server_name/public_html"
 	echo "Main dll name is $dll_name, edit it at /etc/systemd/system/$server_name.service"
 	echo "Domain name $server_name, nginx config at /etc/nginx/conf.d/$server_name.conf"
+	echo "Local port number $port_number"
 	echo "========================================================="
 
 }
