@@ -338,7 +338,7 @@ function install_nginx_netcore_domain(){
 	
 	dll_name="$dll_full_name"
 	if [[ $dll_full_name == *dll* ]]; then
-		dll_name=${dll_full_name/www./''}
+		dll_name=${dll_full_name/.dll/''}
 	fi
 	
 
@@ -575,8 +575,8 @@ function common_configs(){
 	
 	echo "WGET, AXEL"
 	yum -y install epel-release 
-	yum -y install  wget axel
-
+	yum -y install  wget
+	yum -y install  axel
 
 	echo "Winrar"
 	wget https://www.rarlab.com/rar/rarlinux-x64-5.8.0.tar.gz
