@@ -194,17 +194,37 @@ END
 
 function install_php(){
 	echo "========================================================================="
-	echo "Common config"
+	echo "Install PHP"
 
-
-	rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
-	yum install php70w php70w-bcmath php70w-cli php70w-common php70w-dba php70w-devel php70w-embedded php70w-enchant php70w-fpm php70w-gd php70w-imap php70w-interbase php70w-intl php70w-ldap php70w-mbstring php70w-mcrypt php70w-mysqlnd php70w-odbc php70w-opcache php70w-pdo php70w-pdo_dblib php70w-pecl-xdebug php70w-pgsql php70w-phpdbg php70w-process php70w-pspell php70w-recode php70w-snmp php70w-soap php70w-tidy php70w-xml php70w-xmlrpc -y
-
-	systemctl start php-fpm
-	systemctl enable php-fpm
-
-
+	sudo yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	sudo yum-config-manager --enable remi-php74
+	sudo yum -y install php php-common php-opcache php-mcrypt php-cli php-gd php-curl php-mysql  php-mbstring php-fpm
+	php --version
+cat > "/etc/php-fpm.d/www.conf" <<END
+[www]
+user = nginx
+group = nginx
+listen = /var/run/php-fpm/php-fpm.sock
+listen.allowed_clients = 127.0.0.1
+listen.owner = nginx
+listen.group = nginx
+listen.mode = 0660
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+slowlog = /var/log/php-fpm/www-slow.log
+php_admin_value[error_log] = /var/log/php-fpm/www-error.log
+php_admin_flag[log_errors] = on
+php_value[session.save_handler] = files
+php_value[session.save_path]    = /var/lib/php/session
+php_value[soap.wsdl_cache_dir]  = /var/lib/php/wsdlcache
+END
+	chown -R root:nginx /var/lib/php
+	sudo systemctl enable php-fpm
+	sudo systemctl start php-fpm
+	
 	echo ""
 	echo "Done"
 	echo "========================================================================="
@@ -238,7 +258,7 @@ function install_nginx(){
 	cat > "/etc/nginx/nginx.conf" <<END
 user nginx;
 worker_processes auto;
-error_log /var/log/nginx/error.log;
+error_log /var/log/nginx/global-error.log;
 pid /run/nginx.pid;
 
 include /usr/share/nginx/modules/*.conf;
@@ -249,11 +269,11 @@ events {
 
 
 http {
-	log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+	log_format  main  '\$remote_addr (\$http_x_forwarded_for) - \$remote_user [\$time_local] "\$request" '
 					  '\$status \$body_bytes_sent "\$http_referer" '
-					  '"\$http_user_agent" "\$http_x_forwarded_for"';
+					  '"\$http_user_agent"';
 
-	access_log  /var/log/nginx/access.log  main;
+	access_log  /var/log/nginx/global-access.log  main;
 
 	sendfile            on;
 	tcp_nopush          on;
@@ -347,15 +367,15 @@ function install_nginx_netcore_domain(){
 	DIFF=$((50000-5000+1))
 	port_number=$(($(($RANDOM%$DIFF))+5000))
 
-	mkdir -p /home/$server_name/public_html
-	# mkdir /home/$server_name/private_html
-	mkdir /home/$server_name/logs
-	chmod 777 /home/$server_name
-	chmod 777 /home/$server_name/logs
+	mkdir -p /var/www/nginx/$server_name/public
+	# mkdir /var/www/nginx/$server_name/private_html
+	# mkdir /var/www/nginx/$server_name/logs
+	chmod 777 /var/www/nginx/$server_name
+	# chmod 777 /var/www/nginx/$server_name/logs
 	mkdir -p /var/log/nginx
 
 	#take ownership to centos account
-	# chown -R centos:centos /home/$server_name
+	# chown -R centos:centos /var/www/nginx/$server_name
 
 
 
@@ -365,6 +385,8 @@ server {
 		listen       80;
 		server_name $server_name;
 		root         /usr/share/nginx/html;
+		error_log /var/log/nginx/$server_name-error.log;
+		access_log  /var/log/nginx/$server_name-access.log main;
 
 		# Load configuration files for the default server block.
 		include /etc/nginx/default.d/*.conf;
@@ -393,8 +415,8 @@ END
 Description=$server_name
 
 [Service]
-WorkingDirectory=/home/$server_name/public_html
-ExecStart=/usr/bin/dotnet /home/$server_name/public_html/$dll_name.dll
+WorkingDirectory=/var/www/nginx/$server_name/public
+ExecStart=/usr/bin/dotnet /var/www/nginx/$server_name/public/$dll_name.dll
 Restart=always
 # Restart service after 10 seconds if the dotnet service crashes:
 RestartSec=10
@@ -413,16 +435,16 @@ END
 
 	echo "========================================================================="
 	echo "Donwload sample site"
-	wget nsknet.github.io/install/hellonetcore3.1.tar -P  /home/$server_name/public_html/
-	tar -xvf /home/$server_name/public_html/hellonetcore3.1.tar -C /home/$server_name/public_html
-	rm -fv  /home/$server_name/public_html/hellonetcore3.1.tar
-	mv /home/$server_name/public_html/HelloNetcore.deps.json  /home/$server_name/public_html/$dll_name.deps.json
-	mv /home/$server_name/public_html/HelloNetcore  /home/$server_name/public_html/$dll_name
-	mv /home/$server_name/public_html/HelloNetcore.pdb  /home/$server_name/public_html/$dll_name.pdb
-	mv /home/$server_name/public_html/HelloNetcore.dll  /home/$server_name/public_html/$dll_name.dll
-	mv /home/$server_name/public_html/HelloNetcore.runtimeconfig.json  /home/$server_name/public_html/$dll_name.runtimeconfig.json
-	# perl -pi -e 's/HelloNetcore/{$dll_name}/g' /home/$server_name/public_html/$dll_name.deps.json
-	sed -i.bak s/HelloNetcore/$dll_name/g /home/$server_name/public_html/$dll_name.deps.json
+	wget nsknet.github.io/install/hellonetcore3.1.tar -P  /var/www/nginx/$server_name/public/
+	tar -xvf /var/www/nginx/$server_name/public/hellonetcore3.1.tar -C /var/www/nginx/$server_name/public
+	rm -fv  /var/www/nginx/$server_name/public/hellonetcore3.1.tar
+	mv /var/www/nginx/$server_name/public/HelloNetcore.deps.json  /var/www/nginx/$server_name/public/$dll_name.deps.json
+	mv /var/www/nginx/$server_name/public/HelloNetcore  /var/www/nginx/$server_name/public/$dll_name
+	mv /var/www/nginx/$server_name/public/HelloNetcore.pdb  /var/www/nginx/$server_name/public/$dll_name.pdb
+	mv /var/www/nginx/$server_name/public/HelloNetcore.dll  /var/www/nginx/$server_name/public/$dll_name.dll
+	mv /var/www/nginx/$server_name/public/HelloNetcore.runtimeconfig.json  /var/www/nginx/$server_name/public/$dll_name.runtimeconfig.json
+	# perl -pi -e 's/HelloNetcore/{$dll_name}/g' /var/www/nginx/$server_name/public/$dll_name.deps.json
+	sed -i.bak s/HelloNetcore/$dll_name/g /var/www/nginx/$server_name/public/$dll_name.deps.json
 
 
 
@@ -435,13 +457,89 @@ END
 
 
 	echo "========================================================="
-	echo "Install nginx done, please upload your code to: /home/$server_name/public_html"
+	echo "Install nginx done, please upload your code to: /var/www/nginx/$server_name/public"
 	echo "Main dll name is $dll_name, edit it at /etc/systemd/system/$server_name.service"
 	echo "Domain name $server_name, nginx config at /etc/nginx/conf.d/$server_name.conf"
 	echo "Local port number $port_number"
 	echo "========================================================="
 
 }
+
+
+function install_nginx_php_domain(){
+	echo "========================================================================="
+	echo "Install new nginx domain and php site"
+	printf "\nEnter your main domain [ENTER]: " 
+	read server_name
+	server_name_alias="www.$server_name"
+	if [[ $server_name == *www* ]]; then
+		server_name_alias=${server_name/www./''}
+	fi
+
+
+	mkdir -p /var/www/nginx/$server_name/public
+	# mkdir /var/www/nginx/$server_name/private_html
+	# mkdir /var/www/nginx/$server_name/logs
+	chmod 777 /var/www/nginx/$server_name
+	# chmod 777 /var/www/nginx/$server_name/logs
+	mkdir -p /var/log/nginx
+
+	#take ownership to centos account
+	# chown -R centos:centos /var/www/nginx/$server_name
+
+
+
+	cat > "/etc/nginx/conf.d/$server_name.conf" <<END
+server {
+		client_max_body_size 200M;
+		listen       80;
+		server_name $server_name;
+		#root         /usr/share/nginx/html;
+		#root /var/www/$server_name/public; 
+		root /var/www/nginx/$server_name/public;
+		error_log /var/log/nginx/$server_name-error.log;
+		access_log  /var/log/nginx/$server_name-access.log main;
+        	index index.php index.html index.htm index.nginx-debian.html;
+
+		# Load configuration files for the default server block.
+		include /etc/nginx/default.d/*.conf;
+
+		location / {
+			try_files \$uri \$uri/ /index.php\$request_uri;
+		}
+
+    location ~ \.php\$ {
+        try_files \$uri =404;
+        fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+		error_page 404 /404.html;
+			location = /40x.html {
+		}
+		error_page 500 502 503 504 /50x.html;
+			location = /50x.html {
+		}
+}
+END
+
+	cat > "/var/www/nginx/$server_name/public/index.php" <<END
+<?php
+phpinfo();
+?>
+END
+
+	sudo systemctl restart nginx
+
+	echo "========================================================="
+	echo "Install nginx done, please upload your code to: /var/www/nginx/$server_name/public"
+	echo "If it thrown 403, please run this command: restorecon -r -v /var/www/nginx/$server_name/public"
+	echo "Domain name $server_name, nginx config at /etc/nginx/conf.d/$server_name.conf"
+	echo "========================================================="
+
+}
+
 
 function install_nginx_certbot_add_domain_direct_dns(){
 	echo "========================================================================="
@@ -487,49 +585,13 @@ END
 
 function install_mariadb(){
 	echo "========================================================================="
-	echo "Common config"
+	echo "Install MariaDB"
 
-
-	admin_password=ldksjrhtpsd
-	phienbanmariadb=10.4
-#dint test it yet!!!!!!!!!!!
-
-cat > "/etc/yum.repos.d/mariadb.repo" <<END
-
-# MariaDB $phienbanmariadb CentOS repository list
-# http://downloads.mariadb.org/mariadb/repositories/
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/$phienbanmariadb/centos7-amd64
-gpgkey=http://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1
-END
-
-
-	sudo yum install mariadb-server mariadb-client -y
-	sudo systemctl start mariadb
-	sudo systemctl enable mariadb
+	sudo yum -y install mariadb-server
+	sudo systemctl start mariadb.service
+	sudo systemctl enable mariadb.service
 	sudo systemctl status mariadb
-
-
-	echo "=========================================================================\n"
-	echo "Config for MariaDB ... \n"
-	echo "=========================================================================\n"
-
-
-	'/usr/bin/mysqladmin' -u root password "$admin_password"
-	mysql -u root -p "$admin_password" -e "GRANT ALL PRIVILEGES ON *.* TO 'admin'@'localhost' IDENTIFIED BY '$admin_password' WITH GRANT OPTION;"
-	mysql -u root -p "$admin_password" -e "DELETE FROM mysql.user WHERE User=''"
-	mysql -u root -p "$admin_password" -e "DROP User '';"
-	mysql -u root -p "$admin_password" -e "DROP DATABASE test"
-	mysql -u root -p "$admin_password" -e "FLUSH PRIVILEGES"
-
-	cat > "/root/.my.cnf" <<END
-[client]
-user=root
-password=$admin_password
-END
-	chmod 600 /root/.my.cnf
+	sudo mysql_secure_installation
 	
 	echo ""
 	echo "Done"
@@ -575,9 +637,9 @@ function common_configs(){
 	
 	echo "WGET, AXEL"
 	yum -y install epel-release 
-	yum -y install  wget
-	yum -y install  axel
-
+	yum -y install wget
+	yum -y install axel
+	yum -y install yum-utils
 	echo "Winrar"
 	wget https://www.rarlab.com/rar/rarlinux-x64-5.8.0.tar.gz
 	tar -zxvf rarlinux-x64-5.8.0.tar.gz
@@ -597,8 +659,8 @@ function show_menu(){
 	echo "    2) Install: NetCore 3.1"
 	echo "    3) Install: NGINX"
 	echo "    4) Install: PostgreSql 12"
-	echo "    5) Install: MariaDb 10.4"
-	echo "    6) Install: PHP 7.3"
+	echo "    5) Install: MariaDb"
+	echo "    6) Install: PHP 7.4"
 	echo "    7) Install: phpMyAdmin"
 	echo "    8) Add: Domain with NGINX and NetCore"
 	echo "    9) Install: Open VPN"
@@ -607,6 +669,8 @@ function show_menu(){
 	# echo "    12) Add: Cerbot config to domain via Cloudflare"
 	# echo "    10) Install: FTP"
 	# echo "    11) Add: FTP Account"
+	echo "    13) Add: Domain with NGINX and PHP"
+
 	printf "Your choise: "
 
 	read n
@@ -651,6 +715,9 @@ function show_menu(){
 		  ;;	  
 	  12) 
 		  install_nginx_certbot_add_domain_cloudflare
+		  ;;	  
+	  13) 
+		  install_nginx_php_domain
 		  ;;
 
 		  
