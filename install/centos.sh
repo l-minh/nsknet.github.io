@@ -138,59 +138,6 @@ END
 	echo "========================================================================="
 }
 
-function install_phpMyAdmin(){
-	echo "Intall phpmyadmin"
-	yum -y install phpmyadmin
-
-	printf "\nEnter your domain for phpmyadmin [ENTER]: " 
-	read server_name
-	server_name_alias="www.$server_name"
-	if [[ $server_name == *www* ]]; then
-		server_name_alias=${server_name/www./''}
-	fi
-
-	cat > "/etc/nginx/conf.d/phpmyadmin.conf" <<END
-server {
-        listen   80;
-        server_name $server_name;
-        root /usr/share/phpMyAdmin;
-		
-	location / {
-        index  index.php;
-        }
-    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml)\$ {
-        access_log        off;
-        expires           30d;
-    }
-	location ~ /\.ht {
-        deny  all;
-    }
-	location ~ /(libraries|setup/frames|setup/libs) {
-        deny all;
-        return 404;
-    }
-	location ~ \.php\$ {
-        include /etc/nginx/fastcgi_params;
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME /usr/share/phpMyAdmin\$fastcgi_script_name;
-		proxy_set_header X-Real-IP  \$remote_addr;
-		proxy_set_header X-Forwarded-For \$remote_addr;
-		proxy_set_header Host \$host;
-    }
-}
-END
-
-	systemctl restart nginx.service
-	systemctl restart php-fpm.service
-	sed '1 a \$cfg['\''PmaAbsoluteUri'\''] = '\''https://'$server_name\''; '  /etc/phpMyAdmin/config.inc.php  > /etc/phpMyAdmin/config.inc.php.tmp
-
-	mv /etc/phpMyAdmin/config.inc.php.tmp /etc/phpMyAdmin/config.inc.php -f
-
-	echo "========================================="
-	echo "Done"
-
-}
 
 function install_php(){
 	echo "========================================================================="
@@ -200,6 +147,7 @@ function install_php(){
 	sudo yum-config-manager --enable remi-php74
 	sudo yum -y install php php-common php-opcache php-mcrypt php-cli php-gd php-curl php-mysql  php-mbstring php-fpm
 	php --version
+	
 cat > "/etc/php-fpm.d/www.conf" <<END
 [www]
 user = nginx
@@ -221,12 +169,22 @@ php_value[session.save_handler] = files
 php_value[session.save_path]    = /var/lib/php/session
 php_value[soap.wsdl_cache_dir]  = /var/lib/php/wsdlcache
 END
+
+
+cat > "/etc/selinux/config" <<END
+SELINUX=disabled
+SELINUXTYPE=targeted
+END
+	#temporarily change the selinux mode from targeted to permissive
+	sudo setenforce 0
+
 	chown -R root:nginx /var/lib/php
 	sudo systemctl enable php-fpm
 	sudo systemctl start php-fpm
 	
 	echo ""
 	echo "Done"
+	echo "If you have any permissin error, please try to reboot the system"
 	echo "========================================================================="
 }
 
@@ -286,6 +244,16 @@ http {
 
 	include /etc/nginx/conf.d/*.conf;
 	
+	gzip on;
+	gzip_static on;
+	gzip_disable "msie6";
+	gzip_vary on;
+	gzip_proxied any;
+	gzip_comp_level 6;
+	gzip_buffers 16 8k;
+	gzip_http_version 1.1;
+	gzip_types text/plain text/css application/json text/javascript application/javascript text/xml application/xml application/xml+rss;
+
 	server {
 		listen      80 default_server;
 		server_name "";
@@ -486,7 +454,7 @@ function install_nginx_php_domain(){
 
 	#take ownership to centos account
 	# chown -R centos:centos /var/www/nginx/$server_name
-
+	chown -R nginx:nginx  /var/www/nginx/$server_name
 
 
 	cat > "/etc/nginx/conf.d/$server_name.conf" <<END
@@ -533,9 +501,51 @@ END
 	sudo systemctl restart nginx
 
 	echo "========================================================="
-	echo "Install nginx done, please upload your code to: /var/www/nginx/$server_name/public"
-	echo "If it thrown 403, please run this command: restorecon -r -v /var/www/nginx/$server_name/public"
+	echo "Domain added, please upload your code to: /var/www/nginx/$server_name/public"
 	echo "Domain name $server_name, nginx config at /etc/nginx/conf.d/$server_name.conf"
+	echo "If it thrown 403, please run this command: restorecon -r -v /var/www/nginx/$server_name/public"
+	echo "========================================================="
+
+}
+function install_wordpress_phpmyadmin(){
+	echo "========================================================================="
+	echo "Install Wordpress & phpMyAdmin"
+	printf "\nEnter your main domain [ENTER]: " 
+	read server_name
+	server_name_alias="www.$server_name"
+	if [[ $server_name == *www* ]]; then
+		server_name_alias=${server_name/www./''}
+	fi
+
+
+	mkdir -p /var/www/nginx/$server_name/public
+	chmod 777 /var/www/nginx/$server_name
+
+	wget https://wordpress.org/latest.tar.gz
+	wget https://files.phpmyadmin.net/phpMyAdmin/4.9.5/phpMyAdmin-4.9.5-english.tar.gz
+	tar -zxvf latest.tar.gz
+	tar -zxvf phpMyAdmin-4.9.5-english.tar.gz
+
+	mv wordpress/* /var/www/nginx/$server_name/public
+
+	yes | cp -rf  wordpress/* /var/www/nginx/$server_name/public
+	rm -rf wordpress
+
+	mkdir /var/www/nginx/$server_name/public/phpMyAdmin
+	mkdir /var/www/nginx/$server_name/public/phpMyAdmin/tmp
+	chmod 777 /var/www/nginx/$server_name/public/phpMyAdmin/tmp
+	yes | cp -rf  phpMyAdmin-4.9.5-english/* /var/www/nginx/$server_name/public/phpMyAdmin
+	rm -rf phpMyAdmin-4.9.5-english
+
+	rm -fv  latest.tar.gz
+	rm -fv  phpMyAdmin-4.9.5-english.tar.gz
+	chown -R nginx:nginx  /var/www/nginx/$server_name
+
+
+	echo "========================================================="
+	echo "Wordpress & phpMyAdmin have been installed to /var/www/nginx/$server_name/public"
+	echo "Wordpress: $server_name"
+	echo "phpMyAdmin: $server_name/phpMyAdmin"
 	echo "========================================================="
 
 }
@@ -661,15 +671,16 @@ function show_menu(){
 	echo "    4) Install: PostgreSql 12"
 	echo "    5) Install: MariaDb"
 	echo "    6) Install: PHP 7.4"
-	echo "    7) Install: phpMyAdmin"
+	echo "    7) Add: Domain with NGINX and PHP"
 	echo "    8) Add: Domain with NGINX and NetCore"
-	echo "    9) Install: Open VPN"
+	echo "    9) Deploy: Wordpress & phpMyAdmin"
+	#echo "    9) Install: Open VPN"
 	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
 	# echo "    11) Add: Cerbot config to domain via direct DNS"
 	# echo "    12) Add: Cerbot config to domain via Cloudflare"
 	# echo "    10) Install: FTP"
 	# echo "    11) Add: FTP Account"
-	echo "    13) Add: Domain with NGINX and PHP"
+
 
 	printf "Your choise: "
 
@@ -698,14 +709,17 @@ function show_menu(){
 		  install_php
 		  ;;		  
 	  7) 
-		  install_phpMyAdmin
+		  install_nginx_php_domain
 		  ;;	  
 	  8) 
 		  install_nginx_netcore_domain
-		  
 		  ;;  
+		  
+	  # 9) 
+		  # install_open_vpn
+		  # ;;	  
 	  9) 
-		  install_open_vpn
+		  install_wordpress_phpmyadmin
 		  ;;
 	  10) 
 		  install_nginx_certbot
@@ -716,9 +730,7 @@ function show_menu(){
 	  12) 
 		  install_nginx_certbot_add_domain_cloudflare
 		  ;;	  
-	  13) 
-		  install_nginx_php_domain
-		  ;;
+
 
 		  
 
@@ -740,6 +752,15 @@ do
 	echo ""
 	echo ""
 done
+
+
+
+#FAQ:
+
+#Q: Wordpress: To perform the requested action, WordPress needs to access your web server
+#A: Add this line to wp-config.php:
+#	define( 'FS_METHOD', 'direct' );
+
 
 
 
