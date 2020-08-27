@@ -649,6 +649,8 @@ function common_configs(){
 	yum -y install epel-release 
 	yum -y install wget
 	yum -y install axel
+	yum -y install htop
+	yum -y install tmux
 	yum -y install yum-utils
 	echo "Winrar"
 	wget https://www.rarlab.com/rar/rarlinux-x64-5.8.0.tar.gz
