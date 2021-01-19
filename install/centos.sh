@@ -184,7 +184,7 @@ END
 	
 	echo ""
 	echo "Done"
-	echo "If you have any permissin error, please try to reboot the system"
+	echo "If you have any permission error, please try to reboot the system"
 	echo "========================================================================="
 }
 
@@ -196,6 +196,39 @@ function install_netcore(){
 	sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
 	sudo yum install dotnet-sdk-3.1 aspnetcore-runtime-3.1 dotnet-runtime-3.1 -y
 	
+	echo ""
+	echo "Done"
+	echo "========================================================================="
+}
+
+function install_mongodb(){
+	#install mongodb
+	#https://docs.mongodb.com/manual/tutorial/install-mongodb-on-red-hat/
+	echo "========================================================================="
+	cat > "/etc/yum.repos.d/mongodb-org-4.4.repo" <<END
+	[mongodb-org-4.4]
+	name=MongoDB Repository
+	baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.4/x86_64/
+	gpgcheck=1
+	enabled=1
+	gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
+
+END
+
+
+	yum install -y mongodb-org
+	mkdir -p /var/lib/mongo
+	mkdir -p /var/log/mongodb
+
+
+	chown -R mongod:mongod /var/lib/mongo
+	chown -R mongod:mongod /var/log/mongodb
+
+
+	systemctl enable mongod
+	system  mongod start
+	system  mongod status
+
 	echo ""
 	echo "Done"
 	echo "========================================================================="
@@ -676,6 +709,7 @@ function show_menu(){
 	echo "    7) Add: Domain with NGINX and PHP"
 	echo "    8) Add: Domain with NGINX and NetCore"
 	echo "    9) Deploy: Wordpress & phpMyAdmin"
+	echo "    10) Install: MongoDB"
 	#echo "    9) Install: Open VPN"
 	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
 	# echo "    11) Add: Cerbot config to domain via direct DNS"
@@ -723,9 +757,13 @@ function show_menu(){
 	  9) 
 		  install_wordpress_phpmyadmin
 		  ;;
-	  10) 
-		  install_nginx_certbot
-		  ;;	  
+	 10) 
+	  	  install_mongodb
+		  ;;
+	  
+	#   10) 
+	# 	  install_nginx_certbot
+	# 	  ;;	  
 	  11) 
 		  install_nginx_certbot_add_domain_direct_dns
 		  ;;	  
