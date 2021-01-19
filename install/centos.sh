@@ -226,8 +226,8 @@ END
 
 
 	systemctl enable mongod
-	system  mongod start
-	system  mongod status
+	service  mongod start
+	service  mongod status
 
 	echo ""
 	echo "Done"
