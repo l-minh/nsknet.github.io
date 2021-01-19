@@ -205,13 +205,13 @@ function install_mongodb(){
 	#install mongodb
 	#https://docs.mongodb.com/manual/tutorial/install-mongodb-on-red-hat/
 	echo "========================================================================="
-	cat > "/etc/yum.repos.d/mongodb-org-4.4.repo" <<END
-	[mongodb-org-4.4]
-	name=MongoDB Repository
-	baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.4/x86_64/
-	gpgcheck=1
-	enabled=1
-	gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
+cat > "/etc/yum.repos.d/mongodb-org-4.4.repo" <<END
+[mongodb-org-4.4]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.4/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
 
 END
 
