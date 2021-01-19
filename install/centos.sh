@@ -437,16 +437,16 @@ END
 
 	echo "========================================================================="
 	echo "Donwload sample site"
-	wget nsknet.github.io/install/hellonetcore3.1.tar -P  /var/www/nginx/$server_name/public/
-	tar -xvf /var/www/nginx/$server_name/public/hellonetcore3.1.tar -C /var/www/nginx/$server_name/public
-	rm -fv  /var/www/nginx/$server_name/public/hellonetcore3.1.tar
-	mv /var/www/nginx/$server_name/public/HelloNetcore.deps.json  /var/www/nginx/$server_name/public/$dll_name.deps.json
-	mv /var/www/nginx/$server_name/public/HelloNetcore  /var/www/nginx/$server_name/public/$dll_name
-	mv /var/www/nginx/$server_name/public/HelloNetcore.pdb  /var/www/nginx/$server_name/public/$dll_name.pdb
-	mv /var/www/nginx/$server_name/public/HelloNetcore.dll  /var/www/nginx/$server_name/public/$dll_name.dll
-	mv /var/www/nginx/$server_name/public/HelloNetcore.runtimeconfig.json  /var/www/nginx/$server_name/public/$dll_name.runtimeconfig.json
-	# perl -pi -e 's/HelloNetcore/{$dll_name}/g' /var/www/nginx/$server_name/public/$dll_name.deps.json
-	sed -i.bak s/HelloNetcore/$dll_name/g /var/www/nginx/$server_name/public/$dll_name.deps.json
+	wget nsknet.github.io/install/SampleBlankSite.tar -P  /var/www/nginx/$server_name/public/
+	tar -xvf /var/www/nginx/$server_name/public/SampleBlankSite.tar -C /var/www/nginx/$server_name/public
+	rm -fv  /var/www/nginx/$server_name/public/SampleBlankSite.tar
+	mv /var/www/nginx/$server_name/public/SampleBlankSite.deps.json  /var/www/nginx/$server_name/public/$dll_name.deps.json
+	mv /var/www/nginx/$server_name/public/SampleBlankSite  /var/www/nginx/$server_name/public/$dll_name
+	mv /var/www/nginx/$server_name/public/SampleBlankSite.pdb  /var/www/nginx/$server_name/public/$dll_name.pdb
+	mv /var/www/nginx/$server_name/public/SampleBlankSite.dll  /var/www/nginx/$server_name/public/$dll_name.dll
+	mv /var/www/nginx/$server_name/public/SampleBlankSite.runtimeconfig.json  /var/www/nginx/$server_name/public/$dll_name.runtimeconfig.json
+	# perl -pi -e 's/SampleBlankSite/{$dll_name}/g' /var/www/nginx/$server_name/public/$dll_name.deps.json
+	sed -i.bak s/SampleBlankSite/$dll_name/g /var/www/nginx/$server_name/public/$dll_name.deps.json
 
 
 
