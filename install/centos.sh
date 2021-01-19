@@ -31,9 +31,10 @@ function install_postgres_remote()
 
 
 	#allow PostgreSQL service.
-	sudo firewall-cmd --add-service=postgresql --permanent
-	sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
-	sudo firewall-cmd --reload
+	#disable the Firewall rule, we will use putty tunel for more sercure
+	# sudo firewall-cmd --add-service=postgresql --permanent
+	# sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
+	# sudo firewall-cmd --reload
 
 
 	cat > "/var/lib/pgsql/12/data/postgresql.conf" <<END
@@ -194,7 +195,7 @@ function install_netcore(){
 	echo "========================================================================="
 	echo "Install Netcore"
 	sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-	sudo yum install dotnet-sdk-3.1 aspnetcore-runtime-3.1 dotnet-runtime-3.1 -y
+	sudo yum install dotnet-sdk-5.0 aspnetcore-runtime-5.0 dotnet-runtime-5.0 -y
 	
 	echo ""
 	echo "Done"
@@ -701,7 +702,7 @@ function show_menu(){
 	echo "Select function to execute or press CRTL+C to exit:"
 	echo "    0) Setup: Common config for all VPS (time zone, firewall, fail2ban)"
 	echo "    1) Setup: Virtual RAM 4GB"
-	echo "    2) Install: NetCore 3.1"
+	echo "    2) Install: NetCore 5.0"
 	echo "    3) Install: NGINX"
 	echo "    4) Install: PostgreSql 12"
 	echo "    5) Install: MariaDb"
