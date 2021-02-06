@@ -31,10 +31,10 @@ function install_postgres_remote()
 
 
 	#allow PostgreSQL service.
-	#disable the Firewall rule, we will use putty tunel for more sercure
-	# sudo firewall-cmd --add-service=postgresql --permanent
-	# sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
-	# sudo firewall-cmd --reload
+	#TODO disable the Firewall rule, we will use putty tunel for more sercure
+	sudo firewall-cmd --add-service=postgresql --permanent
+	sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
+	sudo firewall-cmd --reload
 
 
 	cat > "/var/lib/pgsql/12/data/postgresql.conf" <<END
@@ -225,10 +225,38 @@ END
 	chown -R mongod:mongod /var/lib/mongo
 	chown -R mongod:mongod /var/log/mongodb
 
+sudo cp /etc/mongod.conf /etc/mongod.conf.bak
+cat > "/etc/mongod.conf" <<END
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+storage:
+  dbPath: /var/lib/mongo
+  journal:
+    enabled: true
+
+processManagement:
+  fork: true  
+  pidFilePath: /var/run/mongodb/mongod.pid
+  timeZoneInfo: /usr/share/zoneinfo
+
+net:
+  port: 27017
+  bindIpAll: true
+END
+
+
 
 	systemctl enable mongod
 	service  mongod start
 	service  mongod status
+
+	#sudo firewall-cmd --add-service=mongod --permanent
+	sudo firewall-cmd --zone=public --add-port=27017/tcp --permanent
+	sudo firewall-cmd --reload
+
 
 	echo ""
 	echo "Done"
