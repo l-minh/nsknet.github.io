@@ -32,9 +32,9 @@ function install_postgres_remote()
 
 	#allow PostgreSQL service.
 	#TODO disable the Firewall rule, we will use putty tunel for more sercure
-	sudo firewall-cmd --add-service=postgresql --permanent
-	sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
-	sudo firewall-cmd --reload
+	# sudo firewall-cmd --add-service=postgresql --permanent
+	# sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
+	# sudo firewall-cmd --reload
 
 
 	cat > "/var/lib/pgsql/12/data/postgresql.conf" <<END
