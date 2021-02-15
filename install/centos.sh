@@ -254,8 +254,82 @@ END
 	service  mongod status
 
 	#sudo firewall-cmd --add-service=mongod --permanent
-	sudo firewall-cmd --zone=public --add-port=27017/tcp --permanent
-	sudo firewall-cmd --reload
+	#sudo firewall-cmd --zone=public --add-port=27017/tcp --permanent
+	#sudo firewall-cmd --reload
+
+
+	echo ""
+	echo "Done"
+	echo "========================================================================="
+}
+
+function install_elastic_kibana(){
+	#install Elasticsearch & Kibana
+	#https://linuxize.com/post/how-to-install-elasticsearch-on-centos-7/
+	echo "========================================================================="
+
+	
+	#setup the source repo
+	rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+	cat > "/etc/yum.repos.d/elasticsearch.repo" <<END
+[elasticsearch]
+name=Elasticsearch repository for 7.x packages
+baseurl=https://artifacts.elastic.co/packages/7.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+END
+	yum install -y --enablerepo=elasticsearch elasticsearch
+	#service elasticsearch start
+
+	#open the firewall
+	# sudo firewall-cmd --add-service=elasticsearch --permanent
+	# sudo firewall-cmd --zone=public --add-port=9200/tcp --permanent
+	# sudo firewall-cmd --reload
+
+	#config to listen from all ip addreses
+	cat > "/etc/elasticsearch/elasticsearch.yml" <<END
+# Path to directory where to store the data (separate multiple locations by comma):
+path.data: /var/lib/elasticsearch
+# Path to log files:
+path.logs: /var/log/elasticsearch
+# Set the bind address to a specific IP (IPv4 or IPv6):
+network.host: 0.0.0.0
+node.data : true
+discovery.seed_hosts : []
+cluster.initial_master_nodes : []
+# Set a custom port for HTTP:
+http.port: 9200
+END
+
+	systemctl enable elasticsearch
+	service elasticsearch restart
+
+	#nothing danger, just want to see the log ^^
+	#sudo journalctl -u elasticsearch
+
+
+	################################
+	#kibana
+	yum install --enablerepo=elasticsearch kibana -y
+	#service kibana start
+
+	#open the firewall
+	# sudo firewall-cmd --add-service=kibana --permanent
+	# sudo firewall-cmd --zone=public --add-port=5601/tcp --permanent
+	# sudo firewall-cmd --reload
+
+	#config to listen from all ip addreses
+	cat > "/etc/kibana/kibana.yml" <<END
+server.port: 5601
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://localhost:9200"]
+END
+	systemctl enable kibana
+	service kibana restart
+
 
 
 	echo ""
@@ -739,6 +813,7 @@ function show_menu(){
 	echo "    8) Add: Domain with NGINX and NetCore"
 	echo "    9) Deploy: Wordpress & phpMyAdmin"
 	echo "    10) Install: MongoDB"
+	echo "    10) Install: Elasticsearch & Kibana"
 	#echo "    9) Install: Open VPN"
 	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
 	# echo "    11) Add: Cerbot config to domain via direct DNS"
@@ -789,13 +864,16 @@ function show_menu(){
 	 10) 
 	  	  install_mongodb
 		  ;;
+	 11) 
+	  	  install_elastic_kibana
+		  ;;
 	  
 	#   10) 
 	# 	  install_nginx_certbot
 	# 	  ;;	  
-	  11) 
-		  install_nginx_certbot_add_domain_direct_dns
-		  ;;	  
+	#   11) 
+	# 	  install_nginx_certbot_add_domain_direct_dns
+	# 	  ;;	  
 	  12) 
 		  install_nginx_certbot_add_domain_cloudflare
 		  ;;	  
