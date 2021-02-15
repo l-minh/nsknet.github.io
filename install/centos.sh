@@ -296,7 +296,8 @@ path.data: /var/lib/elasticsearch
 # Path to log files:
 path.logs: /var/log/elasticsearch
 # Set the bind address to a specific IP (IPv4 or IPv6):
-network.host: 0.0.0.0
+#network.host: 0.0.0.0
+network.host: 127.0.0.1
 node.data : true
 discovery.seed_hosts : []
 cluster.initial_master_nodes : []
@@ -304,6 +305,7 @@ cluster.initial_master_nodes : []
 http.port: 9200
 END
 
+	systemctl daemon-reload
 	systemctl enable elasticsearch
 	service elasticsearch restart
 
@@ -327,10 +329,10 @@ server.port: 5601
 server.host: "0.0.0.0"
 elasticsearch.hosts: ["http://localhost:9200"]
 END
+
+	systemctl daemon-reload
 	systemctl enable kibana
 	service kibana restart
-
-
 
 	echo ""
 	echo "Done"
@@ -813,7 +815,7 @@ function show_menu(){
 	echo "    8) Add: Domain with NGINX and NetCore"
 	echo "    9) Deploy: Wordpress & phpMyAdmin"
 	echo "    10) Install: MongoDB"
-	echo "    10) Install: Elasticsearch & Kibana"
+	echo "    11) Install: Elasticsearch & Kibana"
 	#echo "    9) Install: Open VPN"
 	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
 	# echo "    11) Add: Cerbot config to domain via direct DNS"
