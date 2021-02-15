@@ -291,18 +291,11 @@ END
 
 	#config to listen from all ip addreses
 	cat > "/etc/elasticsearch/elasticsearch.yml" <<END
-# Path to directory where to store the data (separate multiple locations by comma):
 path.data: /var/lib/elasticsearch
-# Path to log files:
 path.logs: /var/log/elasticsearch
-# Set the bind address to a specific IP (IPv4 or IPv6):
-#network.host: 0.0.0.0
 network.host: 127.0.0.1
-node.data : true
-discovery.seed_hosts : []
-cluster.initial_master_nodes : []
-# Set a custom port for HTTP:
 http.port: 9200
+discovery.type: single-node
 END
 
 	systemctl daemon-reload
@@ -326,8 +319,9 @@ END
 	#config to listen from all ip addreses
 	cat > "/etc/kibana/kibana.yml" <<END
 server.port: 5601
-server.host: "0.0.0.0"
-elasticsearch.hosts: ["http://localhost:9200"]
+server.host: "127.0.0.1"
+elasticsearch.hosts: ["http://127.0.0.1:9200"]
+#logging.verbose: true
 END
 
 	systemctl daemon-reload
@@ -335,6 +329,8 @@ END
 	service kibana restart
 
 	echo ""
+	echo "If the elastic cannot start, please try to disable SELinux or buy a stronger machine :)"
+	echo "If the kibana err, please check by: /usr/share/kibana/bin/kibana -V"
 	echo "Done"
 	echo "========================================================================="
 }
