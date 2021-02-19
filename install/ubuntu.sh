@@ -777,20 +777,9 @@ function common_configs(){
 	rm -f /etc/localtime
 	ln -sf /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
 	
-	
-	
-	echo "WGET, AXEL"
-	yum -y install epel-release 
-	yum -y install wget
-	yum -y install axel
-	yum -y install htop
-	yum -y install tmux
-	yum -y install yum-utils
-	echo "Winrar"
-	wget https://www.rarlab.com/rar/rarlinux-x64-5.8.0.tar.gz
-	tar -zxvf rarlinux-x64-5.8.0.tar.gz
-	cp -v ./rar/rar /usr/local/bin/
-	cp -v ./rar/unrar /usr/local/bin/
+	echo "Common tools"
+	apt update
+	apt-get --assume-yes install wget axel htop tmux rar unrar
 
 		
 	echo ""
