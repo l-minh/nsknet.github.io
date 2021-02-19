@@ -262,11 +262,11 @@ END
 
 	systemctl enable elasticsearch
 	service elasticsearch start
-	service elasticsearch status
+	# service elasticsearch status
 
 	systemctl enable kibana
 	service kibana start
-	service kibana status
+	# service kibana status
 
 	echo ""
 	echo "If the elastic cannot start, please try to disable SELinux or buy a stronger machine :)"
@@ -363,7 +363,7 @@ END
 	
 	ufw allow http
 	ufw allow https
-	firewall-cmd --reload
+	ufw --force enable
 	
 
 	echo ""
@@ -730,6 +730,7 @@ function common_configs(){
 	apt install -y ufw	
 	ufw default deny incoming
 	ufw default allow outgoing
+	ufw allow ssh
 	ufw --force enable
 
 	echo ""
@@ -739,7 +740,7 @@ function common_configs(){
 
 function show_menu(){
 	echo "Select function to execute or press CRTL+C to exit:"
-	echo "    0) Setup: Common config for all VPS (time zone, firewall, fail2ban)"
+	echo "    0) Setup: Common config for all VPS (time zone, firewall, ultils)"
 	echo "    1) Setup: Virtual RAM 4GB"
 	echo "    2) Install: NetCore 3.1 & 5.0"
 	echo "    3) Install: NGINX"
