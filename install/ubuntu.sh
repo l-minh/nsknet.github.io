@@ -9,25 +9,23 @@ function install_postgres_remote()
 	echo "========================================================================="
 	echo "Install POSTGRESQL12"
 	
-	#https://computingforgeeks.com/how-to-install-postgresql-12-on-centos-7/
-	sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-
-	sudo yum install epel-release yum-utils -y 
-	sudo yum-config-manager --enable pgdg12
-	sudo yum install postgresql12-server postgresql12 -y
+	#https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
+	apt install -y postgresql-12 postgresql-contrib
 
 	#init database
 	echo "init database ========================="
-	sudo /usr/pgsql-12/bin/postgresql-12-setup initdb
+	#sudo /usr/pgsql-12/bin/postgresql-12-setup initdb
 
-	sudo systemctl enable --now postgresql-12
+	systemctl enable postgresql
+	systemctl start postgresql
+	systemctl status postgresql
 
 
 	printf "\nEnter db password for user postgres [no special charaters]: " 
 	read db_password
 	# #error here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	su - postgres -c "psql -U postgres -d postgres -c \"alter user postgres with password '$db_password';\""
-	sudo systemctl restart postgresql-12
+	sudo systemctl restart postgresql
 
 
 	#allow PostgreSQL service.
@@ -36,8 +34,16 @@ function install_postgres_remote()
 	# sudo firewall-cmd --zone=public --add-port=5432/tcp --permanent
 	# sudo firewall-cmd --reload
 
+	cp /etc/postgresql/12/main/postgresql.conf /etc/postgresql/12/main/postgresql.conf.bak
+	cat > "/etc/postgresql/12/main/postgresql.conf" <<END
+#for Ubuntu, centos doesnt have these lines
+data_directory = '/var/lib/postgresql/12/main'
+hba_file = '/etc/postgresql/12/main/pg_hba.conf'
+ident_file = '/etc/postgresql/12/main/pg_ident.conf'
+external_pid_file = '/var/run/postgresql/12-main.pid'
+include_dir = 'conf.d'
 
-	cat > "/var/lib/pgsql/12/data/postgresql.conf" <<END
+
 listen_addresses ='*'
 max_connections = 100			
 shared_buffers = 128MB			
@@ -62,8 +68,8 @@ lc_time = 'en_US.UTF-8'
 default_text_search_config = 'pg_catalog.english'
 END
 
-
-	cat > "/var/lib/pgsql/12/data/pg_hba.conf" <<END
+	cp /etc/postgresql/12/main/pg_hba.conf /etc/postgresql/12/main/pg_hba.conf.bak
+	cat > "/etc/postgresql/12/main/pg_hba.conf" <<END
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 # "local" is for Unix domain socket connections only
 local   all             all                                     md5
@@ -79,7 +85,7 @@ host    replication     all             ::1/128                 ident
 host 	all 			all 			0.0.0.0/0 				md5
 
 END
-	sudo systemctl restart postgresql-12
+	systemctl restart postgresql
 
 	echo ""
 	echo "Done"
@@ -194,9 +200,11 @@ function install_netcore(){
 	#https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos7
 	echo "========================================================================="
 	echo "Install Netcore"
-	sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-	sudo yum install dotnet-sdk-5.0 aspnetcore-runtime-5.0 dotnet-runtime-5.0 -y
-	
+	wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+	dpkg -i packages-microsoft-prod.deb
+	#apt update
+	apt install -y  apt-transport-https dotnet-sdk-5.0  dotnet-sdk-3.1
+	rm packages-microsoft-prod.deb
 	echo ""
 	echo "Done"
 	echo "========================================================================="
@@ -225,7 +233,7 @@ END
 	chown -R mongod:mongod /var/lib/mongo
 	chown -R mongod:mongod /var/log/mongodb
 
-sudo cp /etc/mongod.conf /etc/mongod.conf.bak
+cp /etc/mongod.conf /etc/mongod.conf.bak
 cat > "/etc/mongod.conf" <<END
 systemLog:
   destination: file
@@ -340,15 +348,16 @@ function install_nginx(){
 	echo "Install NGINX"
 
 	#nginx
-	sudo yum install nginx -y
-	sudo systemctl start nginx
-	sudo systemctl enable nginx
-	sudo systemctl status nginx
+	apt-get -y install nginx
+
+	systemctl start nginx
+	systemctl enable nginx
+	systemctl status nginx
 
 	#preconfig for nginx
 	sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
 	cat > "/etc/nginx/nginx.conf" <<END
-user nginx;
+user www-data;
 worker_processes auto;
 error_log /var/log/nginx/global-error.log;
 pid /run/nginx.pid;
@@ -414,14 +423,14 @@ END
 </body>
 </html>
 END
-	sudo systemctl restart nginx
+	systemctl restart nginx
 	
 	#fix Permission denied by default, digital ocean
 	sudo setsebool -P httpd_can_network_connect on 
 
 	
-	firewall-cmd --zone=public --add-port=80/tcp --permanent
-	firewall-cmd --zone=public --add-port=443/tcp --permanent
+	ufw allow http
+	ufw allow https
 	firewall-cmd --reload
 	
 
@@ -779,9 +788,14 @@ function common_configs(){
 	
 	echo "Common tools"
 	apt update
-	apt-get --assume-yes install wget axel htop tmux rar unrar
+	apt-get -y install wget axel htop tmux rar unrar
 
-		
+	echo "Firewall"
+	apt install -y ufw	
+	ufw default deny incoming
+	ufw default allow outgoing
+	ufw --force enable
+
 	echo ""
 	echo "Done"
 	echo "========================================================================="
@@ -815,7 +829,7 @@ function show_menu(){
 	case $n in
 	  0) 
 		  common_configs
-		  install_fail2ban
+		  #install_fail2ban
 		  ;;		  
 	  1) 
 		  install_virtual_ram_4g
