@@ -202,7 +202,7 @@ function install_netcore(){
 	echo "Install Netcore"
 	wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 	dpkg -i packages-microsoft-prod.deb
-	#apt update
+	apt update
 	apt install -y  apt-transport-https dotnet-sdk-5.0  dotnet-sdk-3.1
 	rm packages-microsoft-prod.deb
 	echo ""
@@ -212,59 +212,20 @@ function install_netcore(){
 
 function install_mongodb(){
 	#install mongodb
-	#https://docs.mongodb.com/manual/tutorial/install-mongodb-on-red-hat/
+	#https://www.digitalocean.com/community/tutorials/how-to-install-mongodb-on-ubuntu-20-04
 	echo "========================================================================="
-cat > "/etc/yum.repos.d/mongodb-org-4.4.repo" <<END
-[mongodb-org-4.4]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.4/x86_64/
-gpgcheck=1
-enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
+	curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+	apt update
+	apt install -y mongodb-org
 
-END
-
+	systemctl enable mongod.service
+	service mongod start
+	service mongod status
 
 	yum install -y mongodb-org
 	mkdir -p /var/lib/mongo
 	mkdir -p /var/log/mongodb
-
-
-	chown -R mongod:mongod /var/lib/mongo
-	chown -R mongod:mongod /var/log/mongodb
-
-cp /etc/mongod.conf /etc/mongod.conf.bak
-cat > "/etc/mongod.conf" <<END
-systemLog:
-  destination: file
-  logAppend: true
-  path: /var/log/mongodb/mongod.log
-
-storage:
-  dbPath: /var/lib/mongo
-  journal:
-    enabled: true
-
-processManagement:
-  fork: true  
-  pidFilePath: /var/run/mongodb/mongod.pid
-  timeZoneInfo: /usr/share/zoneinfo
-
-net:
-  port: 27017
-  bindIpAll: true
-END
-
-
-
-	systemctl enable mongod
-	service  mongod start
-	service  mongod status
-
-	#sudo firewall-cmd --add-service=mongod --permanent
-	#sudo firewall-cmd --zone=public --add-port=27017/tcp --permanent
-	#sudo firewall-cmd --reload
-
 
 	echo ""
 	echo "Done"
@@ -273,68 +234,39 @@ END
 
 function install_elastic_kibana(){
 	#install Elasticsearch & Kibana
-	#https://linuxize.com/post/how-to-install-elasticsearch-on-centos-7/
+	#https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-elasticsearch-on-ubuntu-20-04
 	echo "========================================================================="
-
 	
-	#setup the source repo
-	rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
-	cat > "/etc/yum.repos.d/elasticsearch.repo" <<END
-[elasticsearch]
-name=Elasticsearch repository for 7.x packages
-baseurl=https://artifacts.elastic.co/packages/7.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=0
-autorefresh=1
-type=rpm-md
-END
-	yum install -y --enablerepo=elasticsearch elasticsearch
-	#service elasticsearch start
+	curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+	echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+	apt update
+	apt install -y elasticsearch kibana
 
-	#open the firewall
-	# sudo firewall-cmd --add-service=elasticsearch --permanent
-	# sudo firewall-cmd --zone=public --add-port=9200/tcp --permanent
-	# sudo firewall-cmd --reload
 
-	#config to listen from all ip addreses
 	cat > "/etc/elasticsearch/elasticsearch.yml" <<END
 path.data: /var/lib/elasticsearch
 path.logs: /var/log/elasticsearch
 network.host: 127.0.0.1
 http.port: 9200
 discovery.type: single-node
+
 END
+#sudo nano /etc/kibana/kibana.yml
 
-	systemctl daemon-reload
-	systemctl enable elasticsearch
-	service elasticsearch restart
-
-	#nothing danger, just want to see the log ^^
-	#sudo journalctl -u elasticsearch
-
-
-	################################
-	#kibana
-	yum install --enablerepo=elasticsearch kibana -y
-	#service kibana start
-
-	#open the firewall
-	# sudo firewall-cmd --add-service=kibana --permanent
-	# sudo firewall-cmd --zone=public --add-port=5601/tcp --permanent
-	# sudo firewall-cmd --reload
-
-	#config to listen from all ip addreses
 	cat > "/etc/kibana/kibana.yml" <<END
 server.port: 5601
 server.host: "127.0.0.1"
 elasticsearch.hosts: ["http://127.0.0.1:9200"]
-#logging.verbose: true
+
 END
 
-	systemctl daemon-reload
+	systemctl enable elasticsearch
+	service elasticsearch start
+	service elasticsearch status
+
 	systemctl enable kibana
-	service kibana restart
+	service kibana start
+	service kibana status
 
 	echo ""
 	echo "If the elastic cannot start, please try to disable SELinux or buy a stronger machine :)"
@@ -517,6 +449,10 @@ server {
 		error_page 500 502 503 504 /50x.html;
 			location = /50x.html {
 		}
+}
+server {
+    server_name www.$server_name;
+    return 301 \$scheme://$server_name\$request_uri;
 }
 END
 
@@ -805,16 +741,17 @@ function show_menu(){
 	echo "Select function to execute or press CRTL+C to exit:"
 	echo "    0) Setup: Common config for all VPS (time zone, firewall, fail2ban)"
 	echo "    1) Setup: Virtual RAM 4GB"
-	echo "    2) Install: NetCore 5.0"
+	echo "    2) Install: NetCore 3.1 & 5.0"
 	echo "    3) Install: NGINX"
 	echo "    4) Install: PostgreSql 12"
-	echo "    5) Install: MariaDb"
-	echo "    6) Install: PHP 7.4"
-	echo "    7) Add: Domain with NGINX and PHP"
+	echo "    5) Install: MongoDB"
+	echo "    6) Install: Elasticsearch & Kibana"
+
+	# echo "    5) Install: MariaDb"
+	# echo "    6) Install: PHP 7.4"
+	# echo "    7) Add: Domain with NGINX and PHP"
 	echo "    8) Add: Domain with NGINX and NetCore"
-	echo "    9) Deploy: Wordpress & phpMyAdmin"
-	echo "    10) Install: MongoDB"
-	echo "    11) Install: Elasticsearch & Kibana"
+	# echo "    9) Deploy: Wordpress & phpMyAdmin"
 	#echo "    9) Install: Open VPN"
 	# echo "    10) Install: Cerbot Let's Encrypt to NGINX"
 	# echo "    11) Add: Cerbot config to domain via direct DNS"
@@ -844,14 +781,20 @@ function show_menu(){
 		  install_postgres_remote
 		  ;;
 	  5) 
-		  install_mariadb
+	  	  install_mongodb
 		  ;;
 	  6) 
-		  install_php
-		  ;;		  
-	  7) 
-		  install_nginx_php_domain
-		  ;;	  
+	  	  install_elastic_kibana
+		  ;;
+	#   5) 
+	# 	  install_mariadb
+	# 	  ;;
+	#   6) 
+	# 	  install_php
+	# 	  ;;		  
+	#   7) 
+	# 	  install_nginx_php_domain
+	# 	  ;;	  
 	  8) 
 		  install_nginx_netcore_domain
 		  ;;  
@@ -861,12 +804,6 @@ function show_menu(){
 		  # ;;	  
 	  9) 
 		  install_wordpress_phpmyadmin
-		  ;;
-	 10) 
-	  	  install_mongodb
-		  ;;
-	 11) 
-	  	  install_elastic_kibana
 		  ;;
 	  
 	#   10) 
