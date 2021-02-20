@@ -761,67 +761,70 @@ function show_menu(){
 	# echo "    11) Add: FTP Account"
 
 
-	printf "Your choise: "
-
-	read n
-	case $n in
-	  0) 
-		  common_configs
-		  #install_fail2ban
-		  ;;		  
-	  1) 
-		  install_virtual_ram_4g
-		  ;;		  
-	  2) 
-		  install_netcore
-		  ;;	  
-	  3) 
-		  install_nginx
-		  ;;	  
-	  4) 
-		  install_postgres_remote
-		  ;;
-	  5) 
-	  	  install_mongodb
-		  ;;
-	  6) 
-	  	  install_elastic_kibana
-		  ;;
-	#   5) 
-	# 	  install_mariadb
-	# 	  ;;
-	#   6) 
-	# 	  install_php
-	# 	  ;;		  
-	#   7) 
-	# 	  install_nginx_php_domain
-	# 	  ;;	  
-	  8) 
-		  install_nginx_netcore_domain
-		  ;;  
-		  
-	  # 9) 
-		  # install_open_vpn
-		  # ;;	  
-	  9) 
-		  install_wordpress_phpmyadmin
-		  ;;
-	  
-	#   10) 
-	# 	  install_nginx_certbot
-	# 	  ;;	  
-	#   11) 
-	# 	  install_nginx_certbot_add_domain_direct_dns
-	# 	  ;;	  
-	  12) 
-		  install_nginx_certbot_add_domain_cloudflare
-		  ;;	  
-
-
-		  
-
-	  *) echo "Invalid option";;
-	esac
+	read -p "Enter your choices (eg: 1, 2, 3): " str
+	arr=($(echo "$str" | tr ',' '\n'))
+	for i in "${!arr[@]}"
+	do
+		
+		echo "#$i, you select '${arr[i]}'"
+		select=${arr[i]}
+		case $select in
+			0) 
+				common_configs
+				#install_fail2ban
+				;;		  
+			1) 
+				install_virtual_ram_4g
+				;;		  
+			2) 
+				install_netcore
+				;;	  
+			3) 
+				install_nginx
+				;;	  
+			4) 
+				install_postgres_remote
+				;;
+			5) 
+				install_mongodb
+				;;
+			6) 
+				install_elastic_kibana
+				;;
+			#   5) 
+			# 	  install_mariadb
+			# 	  ;;
+			#   6) 
+			# 	  install_php
+			# 	  ;;		  
+			#   7) 
+			# 	  install_nginx_php_domain
+			# 	  ;;	  
+			8) 
+				install_nginx_netcore_domain
+				;;  
+				
+			# 9) 
+				# install_open_vpn
+				# ;;	  
+			9) 
+				install_wordpress_phpmyadmin
+				;;
+			
+			#   10) 
+			# 	  install_nginx_certbot
+			# 	  ;;	  
+			#   11) 
+			# 	  install_nginx_certbot_add_domain_direct_dns
+			# 	  ;;	  
+			12) 
+				install_nginx_certbot_add_domain_cloudflare
+				;;	  			
+			*) echo "Invalid option";;
+		esac
+		echo "=================================================================="
+	done
+	
 }
 
 
