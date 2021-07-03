@@ -18,7 +18,7 @@ function install_postgres_remote()
 
 	systemctl enable postgresql
 	systemctl start postgresql
-	systemctl status postgresql
+	systemctl status postgresql --no-pager 
 
 
 	printf "\nEnter db password for user postgres [no special charaters]: " 
@@ -221,7 +221,7 @@ function install_mongodb(){
 
 	systemctl enable mongod.service
 	service mongod start
-	service mongod status
+	service mongod status --no-pager 
 
 	yum install -y mongodb-org
 	mkdir -p /var/lib/mongo
@@ -262,15 +262,16 @@ END
 
 	systemctl enable elasticsearch
 	service elasticsearch start
-	# service elasticsearch status
+	# service elasticsearch status --no-pager 
 
-	systemctl enable kibana
-	service kibana start
-	# service kibana status
+	#systemctl enable kibana
+	#service kibana start 
+	#service kibana status  --no-pager
 
 	echo ""
 	echo "If the elastic cannot start, please try to disable SELinux or buy a stronger machine :)"
 	echo "If the kibana err, please check by: /usr/share/kibana/bin/kibana -V"
+	echo "Please type 'service kibana start' to start the kibana"
 	echo "Done"
 	echo "========================================================================="
 }
@@ -284,7 +285,7 @@ function install_nginx(){
 
 	systemctl start nginx
 	systemctl enable nginx
-	systemctl status nginx
+	systemctl status nginx  --no-pager
 
 	#preconfig for nginx
 	sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
@@ -679,7 +680,7 @@ function install_mariadb(){
 	sudo yum -y install mariadb-server
 	sudo systemctl start mariadb.service
 	sudo systemctl enable mariadb.service
-	sudo systemctl status mariadb
+	sudo systemctl status mariadb  --no-pager
 	sudo mysql_secure_installation
 	
 	echo ""
