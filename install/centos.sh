@@ -195,7 +195,7 @@ function install_netcore(){
 	echo "========================================================================="
 	echo "Install Netcore"
 	sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-	sudo yum install dotnet-sdk-5.0 aspnetcore-runtime-5.0 dotnet-runtime-5.0 -y
+	sudo yum install dotnet-sdk-5.0 aspnetcore-runtime-5.0 dotnet-runtime-5.0  dotnet-sdk-6.0 aspnetcore-runtime-6.0 dotnet-runtime-6.0 -y
 	
 	echo ""
 	echo "Done"
