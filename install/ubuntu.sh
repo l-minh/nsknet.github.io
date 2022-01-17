@@ -203,7 +203,7 @@ function install_netcore(){
 	wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 	dpkg -i packages-microsoft-prod.deb
 	apt update
-	apt install -y  apt-transport-https dotnet-sdk-5.0  dotnet-sdk-3.1
+	apt install -y  apt-transport-https dotnet-sdk-5.0  dotnet-sdk-3.1 dotnet-sdk-6.0
 	rm packages-microsoft-prod.deb
 	echo ""
 	echo "Done"
@@ -214,8 +214,8 @@ function install_mongodb(){
 	#install mongodb
 	#https://www.digitalocean.com/community/tutorials/how-to-install-mongodb-on-ubuntu-20-04
 	echo "========================================================================="
-	curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+	curl -fsSL https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+	echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
 	apt update
 	apt install -y mongodb-org
 
@@ -743,7 +743,7 @@ function show_menu(){
 	echo "Select function to execute or press CRTL+C to exit:"
 	echo "    0) Setup: Common config for all VPS (time zone, firewall, ultils)"
 	echo "    1) Setup: Virtual RAM 4GB"
-	echo "    2) Install: NetCore 3.1 & 5.0"
+	echo "    2) Install: NetCore 3.1 & 5.0 & 6.0"
 	echo "    3) Install: NGINX"
 	echo "    4) Install: PostgreSql 12"
 	echo "    5) Install: MongoDB"
